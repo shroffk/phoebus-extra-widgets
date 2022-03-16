@@ -5,6 +5,8 @@ import org.csstudio.display.builder.model.WidgetDescriptor;
 import org.csstudio.display.builder.representation.WidgetRepresentation;
 import org.csstudio.display.builder.representation.WidgetRepresentationFactory;
 import org.csstudio.display.builder.representation.spi.WidgetRepresentationsService;
+import org.csstudio.display.extra.widgets.thumbnail.ThumbwheelWidget;
+import org.csstudio.display.extra.widgets.thumbnail.ThumbwheelWidgetRepresentation;
 import org.csstudio.display.extra.widgets.waterfall.WaterfallWidget;
 import org.csstudio.display.extra.widgets.waterfall.WaterfallWidgetRepresentation;
 
@@ -25,6 +27,7 @@ public class ExtraWidgetRepresentationService implements WidgetRepresentationsSe
         };
 
         return Map.ofEntries(
-                entry(WaterfallWidget.WIDGET_DESCRIPTOR, () -> (WidgetRepresentation) new WaterfallWidgetRepresentation()));
+                entry(WaterfallWidget.WIDGET_DESCRIPTOR, () -> (WidgetRepresentation) new WaterfallWidgetRepresentation()),
+                entry(ThumbwheelWidget.WIDGET_DESCRIPTOR, () -> (WidgetRepresentation) new ThumbwheelWidgetRepresentation()));
     }
 }

@@ -9,7 +9,7 @@
         <artifactId>app</artifactId>
         <version>4.6.6-SNAPSHOT</version>
     </parent>
-    <artifactId>phoebus-extra-widgets</artifactId>
+    <artifactId>app-display-extra-widgets</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
