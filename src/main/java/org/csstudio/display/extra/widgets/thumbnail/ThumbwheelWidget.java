@@ -1,13 +1,34 @@
 package org.csstudio.display.extra.widgets.thumbnail;
 
+import java.util.Collections;
+import java.util.List;
 import org.csstudio.display.builder.model.Widget;
 import org.csstudio.display.builder.model.WidgetCategory;
 import org.csstudio.display.builder.model.WidgetDescriptor;
-import org.csstudio.display.builder.model.widgets.VisibleWidget;
+import org.csstudio.display.builder.model.WidgetProperty;
+import org.csstudio.display.builder.model.WidgetPropertyCategory;
+import org.csstudio.display.builder.model.WidgetPropertyDescriptor;
+import org.csstudio.display.builder.model.persist.NamedWidgetColors;
+import org.csstudio.display.builder.model.persist.NamedWidgetFonts;
+import org.csstudio.display.builder.model.persist.WidgetColorService;
+import org.csstudio.display.builder.model.persist.WidgetFontService;
+import org.csstudio.display.builder.model.properties.WidgetColor;
+import org.csstudio.display.builder.model.properties.WidgetFont;
+import org.csstudio.display.builder.model.widgets.WritablePVWidget;
 
-import java.util.Collections;
 
-public class ThumbwheelWidget extends VisibleWidget {
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.newBooleanPropertyDescriptor;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.newColorPropertyDescriptor;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.newIntegerPropertyDescriptor;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propBackgroundColor;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propEnabled;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propFont;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propForegroundColor;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propLimitsFromPV;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propMaximum;
+import static org.csstudio.display.builder.model.properties.CommonWidgetProperties.propMinimum;
+
+public class ThumbwheelWidget extends WritablePVWidget {
 
     /** Widget descriptor */
     public static final WidgetDescriptor WIDGET_DESCRIPTOR =
@@ -24,9 +45,146 @@ public class ThumbwheelWidget extends VisibleWidget {
                 }
             };
 
+    public static final WidgetPropertyDescriptor<WidgetColor> propIncrementColor = newColorPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "increment_color", "Increment Buttons Color");
+    public static final WidgetPropertyDescriptor<WidgetColor> propDecrementColor = newColorPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "decrement_color", "Decrement Buttons Color");
+    public static final WidgetPropertyDescriptor<Boolean> propGraphicVisible = newBooleanPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "graphic_visible", "Graphic Visible");
+    public static final WidgetPropertyDescriptor<Integer> propIntegerDigits = newIntegerPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "integer_digits", "Integer Digits");
+    public static final WidgetPropertyDescriptor<Integer> propDecimalDigits = newIntegerPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "decimal_digits", "Decimal Digits");
+    public static final WidgetPropertyDescriptor<WidgetColor> propInvalidColor = newColorPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "invalid_color", "Invalid Color");
+    public static final WidgetPropertyDescriptor<Boolean> propScrollEnabled = newBooleanPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "scroll_enabled", "Scroll Enabled");
+    public static final WidgetPropertyDescriptor<Boolean> propSpinnerShaped = newBooleanPropertyDescriptor(WidgetPropertyCategory.DISPLAY, "spinner_shaped", "Spinner Shaped");
+
+    private volatile WidgetProperty<WidgetColor> background;
+    private volatile WidgetProperty<WidgetColor> foreground;
+    private volatile WidgetProperty<WidgetColor> increment_color;
+    private volatile WidgetProperty<WidgetColor> decrement_color;
+    private volatile WidgetProperty<Integer> integer_digits;
+    private volatile WidgetProperty<Integer> decimal_digits;
+    private volatile WidgetProperty<WidgetFont> font;
+    private volatile WidgetProperty<Boolean> enabled;
+    private volatile WidgetProperty<Boolean> graphic_visible;
+    private volatile WidgetProperty<WidgetColor> invalid_color;
+    private volatile WidgetProperty<Double> minimum;
+    private volatile WidgetProperty<Double> maximum;
+    private volatile WidgetProperty<Boolean> limits_from_pv;
+    private volatile WidgetProperty<Boolean> scroll_enabled;
+    private volatile WidgetProperty<Boolean> spinner_shaped;
+
     public ThumbwheelWidget()
     {
-        super(WIDGET_DESCRIPTOR.getType(), 150, 100);
+        super(WIDGET_DESCRIPTOR.getType(), 400, 100);
+    }
+
+    @Override
+    protected void defineProperties(List<WidgetProperty<?>> properties) {
+        super.defineProperties(properties);
+        properties.add(background = propBackgroundColor.createProperty(this, WidgetColorService.getColor(NamedWidgetColors.WRITE_BACKGROUND)));
+        properties.add(foreground = propForegroundColor.createProperty(this, WidgetColorService.getColor(NamedWidgetColors.TEXT)));
+        properties.add(increment_color = propIncrementColor.createProperty(this, WidgetColorService.getColor(NamedWidgetColors.ALARM_OK)));
+        properties.add(decrement_color = propDecrementColor.createProperty(this, WidgetColorService.getColor(NamedWidgetColors.ALARM_MINOR)));
+        properties.add(invalid_color = propInvalidColor.createProperty(this, WidgetColorService.getColor(NamedWidgetColors.ALARM_INVALID)));
+
+        properties.add(font = propFont.createProperty(this, WidgetFontService.get(NamedWidgetFonts.DEFAULT)));
+        properties.add(decimal_digits = propDecimalDigits.createProperty(this, 2));
+        properties.add(integer_digits = propIntegerDigits.createProperty(this, 3));
+        properties.add(minimum = propMinimum.createProperty(this, 0.0));
+        properties.add(maximum = propMaximum.createProperty(this, 100.0));
+
+        properties.add(enabled = propEnabled.createProperty(this, true));
+        properties.add(graphic_visible = propGraphicVisible.createProperty(this, true));
+        properties.add(scroll_enabled = propScrollEnabled.createProperty(this, false));
+        properties.add(spinner_shaped = propSpinnerShaped.createProperty(this, false));
+        properties.add(limits_from_pv = propLimitsFromPV.createProperty(this, true));
+    }
+
+    /** @return 'background_color' property */
+    public WidgetProperty<WidgetColor> propBackgroundColor()
+    {
+        return background;
+    }
+
+    /** @return 'foreground_color' property */
+    public WidgetProperty<WidgetColor> propForegroundColor()
+    {
+        return foreground;
+    }
+
+    /** @return 'increment_color' property */
+    public WidgetProperty<WidgetColor> propIncrementColor()
+    {
+        return increment_color;
+    }
+
+    /** @return 'decrement_color' property */
+    public WidgetProperty<WidgetColor> propDecrementColor()
+    {
+        return decrement_color;
+    }
+
+    /** @return 'integer_digits' property */
+    public WidgetProperty<Integer> propIntegerDigits()
+    {
+        return integer_digits;
+    }
+
+    /** @return 'decimal_digits' property */
+    public WidgetProperty<Integer> propDecimalDigits()
+    {
+        return decimal_digits;
+    }
+
+    /** @return 'font' property */
+    public WidgetProperty<WidgetFont> propFont()
+    {
+        return font;
+    }
+
+    /** @return 'graphic_visible' property */
+    public WidgetProperty<Boolean> propGraphicVisible()
+    {
+        return graphic_visible;
+    }
+
+    /** @return 'enabled' property */
+    public WidgetProperty<Boolean> propEnabled()
+    {
+        return enabled;
+    }
+
+    /** @return 'invalid_color' property */
+    public WidgetProperty<WidgetColor> propInvalidColor()
+    {
+        return invalid_color;
+    }
+
+    /** @return 'minimum' property */
+    public WidgetProperty<Double> propMinimum()
+    {
+        return minimum;
+    }
+
+    /** @return 'maximum' property */
+    public WidgetProperty<Double> propMaximum()
+    {
+        return maximum;
+    }
+
+    /** @return 'limits_from_pv' property */
+    public WidgetProperty<Boolean> propLimitsFromPV()
+    {
+        return limits_from_pv;
+    }
+
+    /** @return 'enabled' property */
+    public WidgetProperty<Boolean> propScrollEnabled()
+    {
+        return scroll_enabled;
+    }
+
+    /** @return 'enabled' property */
+    public WidgetProperty<Boolean> propSpinnerShaped()
+    {
+        return spinner_shaped;
     }
 
 }
