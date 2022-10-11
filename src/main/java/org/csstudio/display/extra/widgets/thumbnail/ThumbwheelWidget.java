@@ -8,9 +8,7 @@ import org.csstudio.display.builder.model.WidgetDescriptor;
 import org.csstudio.display.builder.model.WidgetProperty;
 import org.csstudio.display.builder.model.WidgetPropertyCategory;
 import org.csstudio.display.builder.model.WidgetPropertyDescriptor;
-import org.csstudio.display.builder.model.persist.NamedWidgetColors;
 import org.csstudio.display.builder.model.persist.NamedWidgetFonts;
-import org.csstudio.display.builder.model.persist.WidgetColorService;
 import org.csstudio.display.builder.model.persist.WidgetFontService;
 import org.csstudio.display.builder.model.properties.WidgetColor;
 import org.csstudio.display.builder.model.properties.WidgetFont;
@@ -58,6 +56,8 @@ public class ThumbwheelWidget extends WritablePVWidget {
     public static final WidgetColor THUMBWHEEL_FOREGROUND_COLOR = new WidgetColor(242, 242, 242);
     public static final WidgetColor THUMBWHEEL_BUTTON_COLOR = new WidgetColor(0, 0, 0);
     public static final WidgetColor THUMBWHEEL_INVALID_COLOR = new WidgetColor(255, 0, 0);
+    public static final double DEFAULT_MIN = 0.0;
+    public static final double DEFAULT_MAX = 100.0;
 
     private volatile WidgetProperty<WidgetColor> background;
     private volatile WidgetProperty<WidgetColor> foreground;
@@ -92,8 +92,8 @@ public class ThumbwheelWidget extends WritablePVWidget {
         properties.add(font = propFont.createProperty(this, WidgetFontService.get(NamedWidgetFonts.DEFAULT)));
         properties.add(decimal_digits = propDecimalDigits.createProperty(this, 2));
         properties.add(integer_digits = propIntegerDigits.createProperty(this, 3));
-        properties.add(minimum = propMinimum.createProperty(this, 0.0));
-        properties.add(maximum = propMaximum.createProperty(this, 100.0));
+        properties.add(minimum = propMinimum.createProperty(this, DEFAULT_MIN));
+        properties.add(maximum = propMaximum.createProperty(this, DEFAULT_MAX));
 
         properties.add(enabled = propEnabled.createProperty(this, true));
         properties.add(graphic_visible = propGraphicVisible.createProperty(this, true));

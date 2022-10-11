@@ -1,25 +1,17 @@
 package org.csstudio.display.extra.widgets.thumbnail;
 
 import java.util.logging.Level;
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.EventHandler;
-import javafx.scene.input.MouseEvent;
 import org.csstudio.display.builder.model.DirtyFlag;
 import org.csstudio.display.builder.model.UntypedWidgetPropertyListener;
 import org.csstudio.display.builder.model.WidgetProperty;
 import org.csstudio.display.builder.model.WidgetPropertyListener;
 import org.csstudio.display.builder.model.util.VTypeUtil;
 import org.csstudio.display.builder.representation.javafx.JFXUtil;
-import org.csstudio.display.builder.representation.javafx.widgets.JFXBaseRepresentation;
 import org.csstudio.display.builder.representation.javafx.widgets.RegionBaseRepresentation;
-import org.csstudio.display.builder.representation.javafx.widgets.SpinnerRepresentation;
 import org.epics.vtype.Display;
 import org.epics.vtype.VType;
-import org.phoebus.ui.javafx.Styles;
-import org.phoebus.ui.vtype.FormatOptionHandler;
 import se.europeanspallationsource.javafx.control.thumbwheel.ThumbWheel;
 
 
@@ -40,10 +32,9 @@ public class ThumbwheelWidgetRepresentation extends RegionBaseRepresentation<Thu
     private final WidgetPropertyListener<VType> valueChangedListener = this::valueChanged;
 
     private volatile boolean enabled = false;
-    private volatile boolean active = false;
     private volatile double value = 0.0;
-    private volatile double min = 0.0;
-    private volatile double max = 100.0;
+    private volatile double min = ThumbwheelWidget.DEFAULT_MIN;
+    private volatile double max = ThumbwheelWidget.DEFAULT_MAX;
 
     @Override
     protected ThumbWheel createJFXNode() throws Exception {
@@ -123,7 +114,6 @@ public class ThumbwheelWidgetRepresentation extends RegionBaseRepresentation<Thu
         super.updateChanges();
         if (dirty_enablement.checkAndClear()) {
             jfx_node.setDisable(!enabled);
-//            Styles.update(jfx_node, Styles.NOT_ENABLED, !enabled);
         }
         if (dirty_style.checkAndClear()) {
 
@@ -167,8 +157,6 @@ public class ThumbwheelWidgetRepresentation extends RegionBaseRepresentation<Thu
         toolkit.scheduleUpdate(this);
     }
 
-
-
     // Thumbwheel value changes when the user interacts with it directly, such as
     // incrementing or decrementing the values via buttons
     private void thumbwheelValueChanged(final ObservableValue<? extends Number> property, final Number old_value, final Number new_value)
@@ -176,6 +164,7 @@ public class ThumbwheelWidgetRepresentation extends RegionBaseRepresentation<Thu
         toolkit.fireWrite(model_widget, new_value);
     }
 
+    // Value change is triggered when the PV value changes
     private void valueChanged(final WidgetProperty<? extends VType> property, final VType old_value, final VType new_value)
     {
         // If the widget is getting limits from the PV, then they may have changed
@@ -200,7 +189,8 @@ public class ThumbwheelWidgetRepresentation extends RegionBaseRepresentation<Thu
         toolkit.scheduleUpdate(this);
     }
 
-
+    // Enablement changes are triggered by changes to the enabled flag on the widget,
+    // and on the pv writable flag
     private void enablementChanged(final WidgetProperty<Boolean> property, final Boolean old_value, final Boolean new_value)
     {
         enabled =   model_widget.propEnabled().getValue() &&
@@ -212,46 +202,47 @@ public class ThumbwheelWidgetRepresentation extends RegionBaseRepresentation<Thu
     // Determine the new limits, and mark the behavior as changed
     private void limitsChanged(WidgetProperty<?> widgetProperty, Object old_value, Object new_value) {
 
-        min = model_widget.propMinimum().getValue();
-        max = model_widget.propMaximum().getValue();
-        dirty_behavior.mark();
+        // Initialize to default values
+        double new_min = ThumbwheelWidget.DEFAULT_MIN;
+        double new_max = ThumbwheelWidget.DEFAULT_MAX;
 
-//        double new_min = 0, new_max = 0;
-//        if (model_widget.propLimitsFromPV().getValue()) {
-//
-//            // Try to get display range from PV
-//            final Display display_info = Display.displayOf(model_widget.runtimePropValue().getValue());
-//            if (display_info != null) {
-//
-//                // Should use the 'control' range but fall back to 'display' range
-//                if (display_info.getControlRange().isFinite()) {
-//                    new_min = display_info.getControlRange().getMinimum();
-//                    new_max = display_info.getControlRange().getMaximum();
-//                }
-//                else {
-//                    new_min = display_info.getDisplayRange().getMinimum();
-//                    new_max = display_info.getDisplayRange().getMaximum();
-//                    // May also be empty, will fall back to 0..100
-//                }
-//            }
-//
-//            if (! (new_min < new_max))
-//            {
-//                new_min = 0.0;
-//                new_max = 100.0;
-//            }
-//        } else {
-//            new_min = model_widget.propMinimum().getValue();
-//            new_max = model_widget.propMaximum().getValue();
-//        }
-//
-//        if (Double.compare(min, new_min) != 0) {
-//            min = new_min;
-//        }
-//        if (Double.compare(max, new_max) != 0) {
-//            max = new_max;
-//        }
-//    }
+        // If the widget is using PV limits, attempt to use those values
+        if (model_widget.propLimitsFromPV().getValue()) {
+
+            // Try to get display range from PV
+            final Display display_info = Display.displayOf(model_widget.runtimePropValue().getValue());
+            if (display_info != null) {
+
+                // Should use the 'control' range but fall back to 'display' range
+                if (display_info.getControlRange().isFinite()) {
+                    new_min = display_info.getControlRange().getMinimum();
+                    new_max = display_info.getControlRange().getMaximum();
+                }
+                else {
+                    new_min = display_info.getDisplayRange().getMinimum();
+                    new_max = display_info.getDisplayRange().getMaximum();
+                }
+            }
+            // Else do nothing; use the defaults above.
+
+        }
+        // Else, use the limits defined on the widget
+        else {
+            new_min = model_widget.propMinimum().getValue();
+            new_max = model_widget.propMaximum().getValue();
+        }
+
+        // Finally, set the min and max if they've changed,
+        // and mark as having changed
+        if (Double.compare(min, new_min) != 0) {
+            min = new_min;
+            dirty_behavior.mark();
+        }
+        if (Double.compare(max, new_max) != 0) {
+            max = new_max;
+            dirty_behavior.mark();
+        }
+
     }
 
 
